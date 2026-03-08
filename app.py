@@ -1,5 +1,9 @@
 import sqlite3
 import os
+import subprocess
+from flask import Flask, request, send_file
+
+app = Flask(__name__)
 
 # ================================================================
 # DEMO GHAS - Code intentionnellement vulnérable
@@ -7,22 +11,53 @@ import os
 # ================================================================
 
 # VULNÉRABILITÉ 1 : SQL Injection
-def get_user_by_name(username):
+# Source : request.args.get("username") = entrée HTTP
+# Sink   : cursor.execute(query) = exécution SQL
+@app.route("/user")
+def get_user():
+    username = request.args.get("username")
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     query = "SELECT * FROM users WHERE username = '" + username + "'"
     cursor.execute(query)
-    return cursor.fetchall()
+    return str(cursor.fetchall())
 
 # VULNÉRABILITÉ 2 : Command Injection
-def list_user_files(user_input):
-    os.system("ls /home/" + user_input)
+# Source : request.args.get("folder") = entrée HTTP
+# Sink   : subprocess.run() = exécution système
+@app.route("/files")
+def list_files():
+    folder = request.args.get("folder")
+    result = subprocess.run(
+        "ls /home/" + folder,
+        shell=True,
+        capture_output=True,
+        text=True
+    )
+    return result.stdout
 
 # VULNÉRABILITÉ 3 : Path Traversal
-def read_user_file(filename):
-    with open("/var/data/" + filename, "r") as f:
-        return f.read()
+# Source : request.args.get("filename") = entrée HTTP
+# Sink   : send_file() = lecture de fichier
+@app.route("/download")
+def download_file():
+    filename = request.args.get("filename")
+    return send_file("/var/data/" + filename)
 
 if __name__ == "__main__":
-    user = input("Entrez un nom d'utilisateur : ")
-    print(get_user_by_name(user))
+    app.run(debug=True)
+```
+
+### 3. Committez les deux fichiers → attendez 3-5 min → retournez dans **Security → Code scanning**
+
+---
+
+## ⏱️ Ce que CodeQL va maintenant tracer
+```
+/user?username=...
+      ↓
+   username = request.args.get("username")   ← SOURCE détectée
+      ↓
+   query = "SELECT..." + username             ← propagation
+      ↓
+   cursor.execute(query)                      ← SINK ⚠️ ALERTE !
