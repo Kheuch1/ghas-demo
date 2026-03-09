@@ -4,7 +4,7 @@
 # ================================================================
 
 # Faux token AWS (format reconnu par GitHub)
-AWS_ACCESS_KEY_ID     = "AKIAIOSFODNN7EXAMPLE"
+AWS_ACCESS_KEY_ID     = "AKIAIOSFODNN7EXAMPgffgfdrf"
 AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 # Fausse URL de base de données avec credentials
